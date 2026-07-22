@@ -1,0 +1,3 @@
+import {createClient} from "@/lib/supabase/server";
+import {flightReservationSchema} from "@/lib/validation";
+export async function POST(request:Request){const db=await createClient();const {data:{user}}=await db.auth.getUser();if(!user)return Response.json({error:"Unauthorized"},{status:401});const parsed=flightReservationSchema.safeParse(await request.json());if(!parsed.success)return Response.json({error:"Invalid flight reservation"},{status:400});const {data,error}=await db.rpc("reserve_flight",{p_flight_id:parsed.data.flightId,p_position:parsed.data.position});if(error)return Response.json({error:error.message},{status:409});return Response.json(data)}

@@ -1,0 +1,349 @@
+:root {
+  font-family:
+    Inter,
+    Segoe UI,
+    sans-serif;
+  color: #17191b;
+  background: #eceeed;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 360px;
+  min-height: 620px;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+.app {
+  min-height: 100vh;
+  padding-bottom: 72px;
+}
+.app > header {
+  height: 58px;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  background: #202326;
+  color: #fff;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+.brand b,
+.login-brand b {
+  font-size: 20px;
+  letter-spacing: 0.14em;
+  color: #d12c31;
+}
+.brand span,
+.login-brand span {
+  font:
+    700 8px ui-monospace,
+    monospace;
+  letter-spacing: 0.12em;
+  border-left: 1px solid #757b7e;
+  padding-left: 10px;
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #aeb4b7;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.icon svg {
+  width: 15px;
+}
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #fff;
+  border-bottom: 1px solid #d5d9da;
+}
+.identity > div {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+}
+.identity span,
+.section-title span,
+.route span,
+.metrics span {
+  font:
+    700 8px ui-monospace,
+    monospace;
+  letter-spacing: 0.1em;
+  color: #737a7d;
+}
+.identity strong {
+  font:
+    600 11px ui-monospace,
+    monospace;
+}
+.identity > svg {
+  width: 17px;
+  color: #27713b;
+}
+.identity button {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+  cursor: pointer;
+}
+.identity button svg {
+  width: 14px;
+}
+.assignment,
+.telemetry {
+  margin: 14px;
+  background: #fff;
+  border: 1px solid #d5d9da;
+  padding: 18px;
+}
+.assignment {
+  border-top: 3px solid #a4161a;
+}
+.simbrief-plan {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px;
+  padding: 14px 16px;
+  background: #202326;
+  color: #fff;
+  border-left: 3px solid #d12c31;
+}
+.simbrief-plan > div { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.simbrief-plan span { font: 700 8px ui-monospace, monospace; letter-spacing: .1em; color: #aeb5b9; }
+.simbrief-plan strong { font: 800 14px ui-monospace, monospace; }
+.simbrief-plan small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #c7cbcd; font-size: 10px; }
+.simbrief-plan button { padding: 11px 13px; border: 1px solid #fff; background: #b5121b; color: #fff; font: 700 9px ui-monospace, monospace; cursor: pointer; white-space: nowrap; }
+.section-title {
+  display: flex;
+  align-items: center;
+}
+.section-title > div {
+  flex: 1;
+}
+.section-title h1 {
+  font:
+    800 31px ui-monospace,
+    monospace;
+  margin: 5px 0;
+}
+.section-title h2 {
+  font-size: 17px;
+  margin: 4px 0;
+}
+.assignment select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #b9bfc1;
+  background: #fff;
+  margin: 12px 0;
+}
+.route {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr 1.3fr;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: #f0f2f0;
+}
+.route > div {
+  display: grid;
+  gap: 5px;
+}
+.route b {
+  font:
+    800 17px ui-monospace,
+    monospace;
+}
+.route svg {
+  width: 18px;
+  color: #a4161a;
+}
+.telemetry {
+  border-top: 3px solid #25282a;
+}
+.section-title i {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+}
+.section-title i.online {
+  background: #e6f4e8;
+  color: #28733a;
+}
+.section-title i.offline {
+  background: #eceeed;
+  color: #777;
+}
+.section-title i svg {
+  width: 18px;
+}
+.metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: #d5d9da;
+  margin-top: 15px;
+}
+.metrics div {
+  display: grid;
+  gap: 5px;
+  background: #f6f7f5;
+  padding: 12px;
+}
+.metrics b {
+  font:
+    700 14px ui-monospace,
+    monospace;
+}
+.alert {
+  margin: 12px 14px;
+  padding: 10px;
+  background: #fff0f0;
+  border-left: 3px solid #a4161a;
+  color: #811418;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.track {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: calc(100% - 28px);
+  height: 48px;
+  margin: 14px;
+  border: 0;
+  background: #a4161a;
+  color: #fff;
+  font:
+    700 11px ui-monospace,
+    monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.track.tracking {
+  background: #242729;
+}
+.track:disabled {
+  opacity: 0.5;
+}
+.track svg {
+  width: 17px;
+}
+.app footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  height: 58px;
+  padding: 0 16px;
+  background: #fff;
+  border-top: 1px solid #d5d9da;
+  font-size: 10px;
+  color: #596064;
+}
+.app footer label {
+  flex: 1;
+}
+.app footer span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font:
+    700 8px ui-monospace,
+    monospace;
+}
+.app footer svg {
+  width: 13px;
+}
+.empty {
+  padding: 14px;
+  background: #f1f2f1;
+  color: #666;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.login {
+  min-height: 100vh;
+  padding: 55px 38px;
+  background: #fff;
+  border-top: 8px solid #a4161a;
+}
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.login .mark {
+  width: 46px;
+  height: 46px;
+  color: #a4161a;
+  margin-top: 70px;
+}
+.login h1 {
+  font-size: 31px;
+  margin: 16px 0 8px;
+}
+.login > p {
+  color: #656c70;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.login form {
+  display: grid;
+  gap: 16px;
+  margin-top: 35px;
+}
+.login label {
+  font:
+    700 9px ui-monospace,
+    monospace;
+  letter-spacing: 0.08em;
+}
+.login input {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 7px;
+  border: 1px solid #b9bfc1;
+}
+.login form button {
+  height: 45px;
+  border: 0;
+  background: #a4161a;
+  color: #fff;
+  font:
+    700 10px ui-monospace,
+    monospace;
+  text-transform: uppercase;
+}
+.login .alert {
+  margin: 0;
+}

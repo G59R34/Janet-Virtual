@@ -1,0 +1,2 @@
+import "server-only";import {createClient} from "@/lib/supabase/server";
+export async function requireApiRoles(roles:string[]){const db=await createClient();const {data:{user}}=await db.auth.getUser();if(!user)return {db,error:Response.json({error:"Unauthorized"},{status:401})};const {data}=await db.from("user_roles").select("role").eq("user_id",user.id).eq("active",true);if(!(data??[]).some(row=>roles.includes(row.role)))return {db,user,error:Response.json({error:"Insufficient role"},{status:403})};return {db,user,error:null}}

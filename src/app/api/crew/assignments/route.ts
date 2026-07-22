@@ -1,0 +1,3 @@
+import {createClient} from "@/lib/supabase/server";
+import {assignmentDropSchema} from "@/lib/validation";
+export async function DELETE(request:Request){const db=await createClient();const {data:{user}}=await db.auth.getUser();if(!user)return Response.json({error:"Unauthorized"},{status:401});const parsed=assignmentDropSchema.safeParse(await request.json());if(!parsed.success)return Response.json({error:"A valid assignment and reason are required"},{status:400});const {data,error}=await db.rpc("drop_flight_assignment",{p_assignment_id:parsed.data.assignmentId,p_reason:parsed.data.reason});if(error)return Response.json({error:error.message},{status:409});return Response.json(data)}

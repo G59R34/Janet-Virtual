@@ -1,0 +1,9 @@
+"use client";
+import {useState} from "react";
+import {useRouter} from "next/navigation";
+type Option={id:string;label:string;code?:string};type Result={tracking_callsign:string;simbrief_url:string};
+export function FlightCreateForm({airports}:{airports:Option[];aircraft:Option[]}){
+ const router=useRouter();const [pending,setPending]=useState(false);const [message,setMessage]=useState("");const [result,setResult]=useState<Result>();
+ async function submit(form:FormData){setPending(true);setMessage("");setResult(undefined);const response=await fetch("/api/dispatch/flights",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({originCode:String(form.get("originCode")).toUpperCase(),destinationCode:String(form.get("destinationCode")).toUpperCase()})});const data=await response.json();setPending(false);if(!response.ok){setMessage(typeof data.error==="string"?data.error:"Flight planning failed");return}setResult(data);setMessage(`${data.tracking_callsign} reserved. Complete the generated plan in SimBrief.`);router.refresh()}
+ return <form action={submit} className="flight-form simple-flight-form"><datalist id="airport-codes">{airports.map(x=><option value={x.code} key={x.id}>{x.label}</option>)}</datalist><label>DEPARTURE<input name="originCode" list="airport-codes" placeholder="KLAS or any simulator airport" required pattern="[A-Za-z0-9]{2,8}" autoFocus/></label><label>ARRIVAL<input name="destinationCode" list="airport-codes" placeholder="KSEA or any simulator airport" required pattern="[A-Za-z0-9]{2,8}"/></label><div className="form-actions"><button className="button primary" disabled={pending}>{pending?"Generating…":"Generate JANET flight"}</button></div>{message&&<p className="wide" role="status">{message}</p>}{result&&<a className="button wide" href={result.simbrief_url} target="_blank" rel="noreferrer">CONTINUE TO SIMBRIEF</a>}</form>
+}

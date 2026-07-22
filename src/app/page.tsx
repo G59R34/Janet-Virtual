@@ -1,65 +1,22 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, Radio, ShieldCheck, Plane, Clock3 } from "lucide-react";
+
+const flights = [
+  ["JANET11", "LAS", "STN 3", "03:40", "ON TIME"],
+  ["JANET55", "LAS", "STN 7", "04:05", "BOARDING"],
+  ["JANET29", "PMD", "STN 3", "08:30", "SCHEDULED"],
+];
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+  return <>
+    <header className="topbar"><Link className="brand" href="/"><span>JANET</span><small>VIRTUAL AIRLINES</small></Link><nav><Link href="/about">About</Link><Link href="/fleet">Fleet</Link><Link href="/network">Network</Link><Link href="/statistics">Statistics</Link></nav><Link href="/login" className="button ghost">Employee access</Link></header>
+    <main>
+      <section className="hero"><div className="eyebrow"><Radio size={14}/> OPERATIONS NETWORK / WESTERN REGION</div><h1>Personnel transport.<br/><em>Precisely coordinated.</em></h1><p>Join a disciplined flight-simulation community built around commuter schedules, special movements, dispatch standards, and persistent airline operations.</p><div className="actions"><Link href="/apply" className="button primary">Submit application <ArrowRight size={16}/></Link><Link href="/ops/map" className="button">View public operations</Link></div><div className="hero-meta"><span><b>21</b> weekday rotations</span><span><b>02</b> fleet categories</span><span><b>09</b> primary stations</span></div></section>
+      <section className="status-strip"><div><span className="pulse"/> SYSTEM STATUS</div><b>ALL SERVICES NOMINAL</b><span>UPDATED 23:41Z</span></section>
+      <section className="operations"><div className="section-head"><div><span className="kicker">TODAY / COMMUTER PROGRAM</span><h2>Movement board</h2></div><Link href="/ops/map">Open live board <ArrowRight size={14}/></Link></div><div className="flight-table"><div className="tr th"><span>CALLSIGN</span><span>ORIGIN</span><span>DESTINATION</span><span>STD</span><span>STATUS</span></div>{flights.map((f)=><div className="tr" key={f[0]}><strong>{f[0]}</strong><span>{f[1]}</span><span>{f[2]}</span><span>{f[3]}L</span><span className={`status ${f[4].toLowerCase().replace(" ", "-")}`}>{f[4]}</span></div>)}</div></section>
+      <section className="feature-grid"><article><Plane/><span>01 / OPERATIONS</span><h3>More than a flight list.</h3><p>Aircraft, personnel, missions, maintenance, and schedules remain connected as the network moves.</p></article><article><ShieldCheck/><span>02 / STANDARDS</span><h3>Qualification matters.</h3><p>Assignments validate role, rank, currency, aircraft qualification, and operational conflicts.</p></article><article><Clock3/><span>03 / CONTINUITY</span><h3>A persistent system.</h3><p>Flights update aircraft location, crew records, utilization, and fictional personnel movement.</p></article></section>
+    </main><Footer/>
+  </>;
 }
+
+export function Footer(){return <footer><div className="brand"><span>JANET</span><small>VIRTUAL AIRLINES</small></div><p>Independent flight-simulation community. Not affiliated with JANET, the U.S. Government, military, contractors, or any real-world organization.</p><span>© 2026 JVA ECOSYSTEM</span></footer>}

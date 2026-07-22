@@ -1,0 +1,1 @@
+.sidebar{max-height:100vh;position:sticky;top:0}.sidebar nav{overflow-y:auto;padding-right:3px}.sidebar .nav-entry{display:grid}.sidebar .nav-entry .label{margin-top:19px}.sidebar .nav-entry:first-child .label{margin-top:0}.sidebar nav::-webkit-scrollbar{width:4px}.sidebar nav::-webkit-scrollbar-thumb{background:#50575a}
