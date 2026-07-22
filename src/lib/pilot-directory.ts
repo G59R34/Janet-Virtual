@@ -1,0 +1,4 @@
+import {createClient as createSupabaseClient} from "@supabase/supabase-js";
+
+export type PilotDirectoryEntry={id:string;employee_number:string|null;display_name:string;primary_role:string;rank:string|null;bio:string|null;home_station:string|null;hire_date:string|null;vatsim_cid:string|null;ivao_id?:string|null;status?:string;public_profile?:boolean;roles?:string[];flight_hours:number;completed_flights:number};
+export async function getPublicPilots(){const url=process.env.NEXT_PUBLIC_SUPABASE_URL;const key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY??process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;if(!url||!key)return [] as PilotDirectoryEntry[];const db=createSupabaseClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});const {data}=await db.rpc("get_public_pilots");return (data??[]) as PilotDirectoryEntry[]}

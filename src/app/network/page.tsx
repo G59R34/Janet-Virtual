@@ -1,1 +1,1 @@
-import {PublicPage} from "@/components/public-page"; export default function Page(){return <PublicPage kind="network"/>}
+import {PublicNetworkPage} from "@/components/public-data-pages";import {getPublicOperations} from "@/lib/public-operations";export default async function Page(){return <PublicNetworkPage data={await getPublicOperations()} token={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN??""}/>}

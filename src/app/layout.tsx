@@ -18,6 +18,8 @@ import "./available-flights.css";
 import "./flight-assignments.css";
 import "./logbook.css";
 import "./pirep-review.css";
+import "./home.css";
+import {AuthSessionPersistence} from "@/components/auth-session-persistence";
 const sans=Geist({variable:"--font-sans",subsets:["latin"]}); const mono=Geist_Mono({variable:"--font-mono",subsets:["latin"]});
 export const metadata:Metadata={title:{default:"JANET Virtual Airlines",template:"%s | JANET VA"},description:"A proprietary-style virtual airline operations ecosystem for serious flight simulation."};
-export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en" className={`${sans.variable} ${mono.variable}`}><body>{children}</body></html>}
+export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en" className={`${sans.variable} ${mono.variable}`}><body><AuthSessionPersistence/>{children}</body></html>}

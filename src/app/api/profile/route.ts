@@ -1,0 +1,4 @@
+import {createClient} from "@/lib/supabase/server";
+import {profileUpdateSchema} from "@/lib/validation";
+
+export async function PUT(request:Request){const db=await createClient();const {data:{user}}=await db.auth.getUser();if(!user)return Response.json({error:"Unauthorized"},{status:401});const parsed=profileUpdateSchema.safeParse(await request.json());if(!parsed.success)return Response.json({error:parsed.error.flatten()},{status:400});const input=parsed.data;const {data,error}=await db.from("profiles").update({display_name:input.displayName,timezone:input.timezone,home_base_id:input.homeBaseId,vatsim_cid:input.vatsimCid,ivao_id:input.ivaoId,simbrief_pilot_id:input.simbriefPilotId,bio:input.bio,public_profile:input.publicProfile,updated_at:new Date().toISOString()}).eq("id",user.id).select("id,display_name,public_profile").single();return Response.json(error?{error:error.message}:data,{status:error?400:200})}

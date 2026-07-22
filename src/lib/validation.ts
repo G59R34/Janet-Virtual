@@ -7,6 +7,7 @@ export const scheduleTemplateUpdateSchema=z.object({id:z.uuid(),active:z.boolean
 export const flightCreateSchema=z.object({originCode:z.string().trim().toUpperCase().regex(/^[A-Z0-9]{2,8}$/),destinationCode:z.string().trim().toUpperCase().regex(/^[A-Z0-9]{2,8}$/)}).refine(v=>v.originCode!==v.destinationCode,{message:"Origin and destination must differ",path:["destinationCode"]});
 export const flightReservationSchema=z.object({flightId:z.uuid(),position:z.enum(["captain","first_officer"])});
 export const assignmentDropSchema=z.object({assignmentId:z.uuid(),reason:z.string().trim().min(3).max(300)});
+export const profileUpdateSchema=z.object({displayName:z.string().trim().min(2).max(80),timezone:z.string().trim().min(1).max(80),homeBaseId:z.uuid().nullable(),vatsimCid:z.union([z.string().trim().regex(/^\d{1,12}$/),z.literal("")]).transform(value=>value||null),ivaoId:z.union([z.string().trim().regex(/^\d{1,12}$/),z.literal("")]).transform(value=>value||null),simbriefPilotId:z.union([z.string().trim().regex(/^\d{1,12}$/),z.literal("")]).transform(value=>value||null),bio:z.string().trim().max(600).transform(value=>value||null),publicProfile:z.boolean()});
 export const flightBoardDeleteSchema=z.object({flightId:z.uuid(),reason:z.string().trim().min(3).max(300).default("Removed from flight board by administrator")});
 export const adminActionSchema=z.discriminatedUnion("action",[
  z.object({action:z.literal("review_application"),applicationId:z.uuid(),status:z.enum(["approved","rejected","waitlisted"]),notes:z.string().max(2000).optional()}),

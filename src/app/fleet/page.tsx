@@ -1,1 +1,1 @@
-import {PublicPage} from "@/components/public-page"; export default function Page(){return <PublicPage kind="fleet"/>}
+import {PublicFleetPage} from "@/components/public-data-pages";import {getPublicOperations} from "@/lib/public-operations";export default async function Page(){return <PublicFleetPage data={await getPublicOperations()}/>}
