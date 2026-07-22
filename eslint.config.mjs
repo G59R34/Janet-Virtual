@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "JCars/**",
+    "JScope/dist/**",
+    "JScope/node_modules/**",
   ]),
 ]);
 

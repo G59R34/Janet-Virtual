@@ -1,0 +1,5 @@
+D:\JVA\JScope\target\debug\deps\document_features-a729d7b91d1ba0f0.d: C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\document-features-0.2.12\lib.rs
+
+D:\JVA\JScope\target\debug\deps\document_features-a729d7b91d1ba0f0.dll: C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\document-features-0.2.12\lib.rs
+
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\document-features-0.2.12\lib.rs:

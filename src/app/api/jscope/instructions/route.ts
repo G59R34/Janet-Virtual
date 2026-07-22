@@ -1,0 +1,4 @@
+import {authenticateApiRequest} from "@/lib/supabase/api";
+import {tacticalInstructionSchema} from "@/lib/tactical-validation";
+
+export async function POST(request:Request){const {db,user}=await authenticateApiRequest(request);if(!user)return Response.json({error:"Unauthorized"},{status:401});const token=request.headers.get("x-jscope-session");if(!token)return Response.json({error:"JScope session required"},{status:401});const parsed=tacticalInstructionSchema.safeParse(await request.json());if(!parsed.success)return Response.json({error:parsed.error.flatten()},{status:400});const input=parsed.data;const {data,error}=await db.rpc("issue_tactical_instruction",{p_token:token,p_position_session_id:input.positionSessionId,p_aircraft_session_id:input.aircraftSessionId,p_type:input.type,p_parameters:input.parameters,p_text:input.text,p_nonce:input.nonce});return Response.json(error?{error:error.message}:data,{status:error?409:201})}

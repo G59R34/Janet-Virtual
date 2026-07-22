@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plane, Search, Trash2 } from "lucide-react";
 
@@ -38,13 +38,14 @@ export function AvailableFlightsTable({
   canDeleteFlights: boolean;
 }) {
   const router = useRouter();
+  const [liveFlights,setLiveFlights]=useState(flights);
   const [query, setQuery] = useState("");
   const [pending, setPending] = useState("");
   const [message, setMessage] = useState("");
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return needle
-      ? flights.filter((f) =>
+      ? liveFlights.filter((f) =>
           [
             f.tracking_callsign,
             f.flight_number,
@@ -53,8 +54,9 @@ export function AvailableFlightsTable({
             f.schedule_template?.name,
           ].some((value) => value?.toLowerCase().includes(needle)),
         )
-      : flights;
-  }, [flights, query]);
+      : liveFlights;
+  }, [liveFlights, query]);
+  useEffect(()=>{let active=true;let timeout:number|undefined;const refresh=async()=>{try{const response=await fetch("/api/crew/flights/available",{cache:"no-store"});if(response.ok){const result=await response.json() as {flights:AvailableFlight[]};if(active)setLiveFlights(result.flights)}}finally{if(active)timeout=window.setTimeout(refresh,10000)}};timeout=window.setTimeout(refresh,10000);return()=>{active=false;if(timeout)window.clearTimeout(timeout)}},[]);
   async function reserve(
     flightId: string,
     position: "captain" | "first_officer",
@@ -76,6 +78,7 @@ export function AvailableFlightsTable({
       );
       return;
     }
+    setLiveFlights(current=>current.filter(flight=>flight.id!==flightId));
     setMessage(`${result.callsign} added to your assignments.`);
     router.refresh();
   }
@@ -100,7 +103,7 @@ export function AvailableFlightsTable({
           />
         </label>
         <span>
-          {visible.length} of {flights.length} operations
+          {visible.length} of {liveFlights.length} tail-backed operations
         </span>
       </div>
       {message && (

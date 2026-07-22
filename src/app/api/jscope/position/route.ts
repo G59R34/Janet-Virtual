@@ -1,0 +1,4 @@
+import {authenticateApiRequest} from "@/lib/supabase/api";
+import {positionClaimSchema} from "@/lib/tactical-validation";
+
+export async function POST(request:Request){const {db,user}=await authenticateApiRequest(request);if(!user)return Response.json({error:"Unauthorized"},{status:401});const token=request.headers.get("x-jscope-session");if(!token)return Response.json({error:"JScope session required"},{status:401});const parsed=positionClaimSchema.safeParse(await request.json());if(!parsed.success)return Response.json({error:"Authorized position and safety acceptance are required"},{status:400});const {data,error}=await db.rpc("claim_tactical_position",{p_token:token,p_position_id:parsed.data.positionId,p_safety_accepted:true});return Response.json(error?{error:error.message}:data,{status:error?409:201})}

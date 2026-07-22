@@ -130,11 +130,42 @@ select {
   color: #fff;
   border-left: 3px solid #d12c31;
 }
-.simbrief-plan > div { display: grid; gap: 4px; min-width: 0; flex: 1; }
-.simbrief-plan span { font: 700 8px ui-monospace, monospace; letter-spacing: .1em; color: #aeb5b9; }
-.simbrief-plan strong { font: 800 14px ui-monospace, monospace; }
-.simbrief-plan small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #c7cbcd; font-size: 10px; }
-.simbrief-plan button { padding: 11px 13px; border: 1px solid #fff; background: #b5121b; color: #fff; font: 700 9px ui-monospace, monospace; cursor: pointer; white-space: nowrap; }
+.simbrief-plan > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.simbrief-plan span {
+  font:
+    700 8px ui-monospace,
+    monospace;
+  letter-spacing: 0.1em;
+  color: #aeb5b9;
+}
+.simbrief-plan strong {
+  font:
+    800 14px ui-monospace,
+    monospace;
+}
+.simbrief-plan small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #c7cbcd;
+  font-size: 10px;
+}
+.simbrief-plan button {
+  padding: 11px 13px;
+  border: 1px solid #fff;
+  background: #b5121b;
+  color: #fff;
+  font:
+    700 9px ui-monospace,
+    monospace;
+  cursor: pointer;
+  white-space: nowrap;
+}
 .section-title {
   display: flex;
   align-items: center;
@@ -346,4 +377,124 @@ select {
 }
 .login .alert {
   margin: 0;
+}
+.tactical-radio {
+  background: #f7f8f6;
+  border-top: 3px solid #161a1c;
+  padding: 18px;
+  margin-top: 14px;
+}
+.tactical-safety {
+  display: flex;
+  gap: 10px;
+  background: #fff3cf;
+  border: 1px solid #d5a72d;
+  padding: 10px;
+  margin-bottom: 14px;
+}
+.tactical-safety svg {
+  flex: 0 0 auto;
+  color: #9b6b00;
+}
+.tactical-safety p {
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 0;
+}
+.tactical-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid #d8dddb;
+}
+.tactical-grid > div {
+  padding: 10px;
+  border: 1px solid #e2e5e3;
+}
+.audio-devices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.audio-devices label {
+  font-size: 9px;
+  font-weight: 700;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 6px;
+}
+.audio-devices select {
+  grid-column: 1/-1;
+  width: 100%;
+}
+.tactical-opt-in,
+.tactical-suspend,
+.tactical-ptt {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border: 0;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.tactical-opt-in {
+  background: #171b1d;
+  color: #fff;
+}
+.tactical-suspend {
+  background: #b5121b;
+  color: #fff;
+}
+.tactical-ptt {
+  background: #dfe4e1;
+}
+.tactical-ptt.transmitting {
+  background: #b5121b;
+  color: #fff;
+}
+.tactical-instruction {
+  display: grid;
+  gap: 5px;
+  margin-top: 12px;
+  padding: 12px;
+  background: #171b1d;
+  color: #fff;
+  border-left: 4px solid #d51d28;
+}
+.tactical-instruction > span,
+.tactical-instruction > small {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+.tactical-instruction > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+.tactical-instruction button {
+  font-size: 9px;
+  padding: 6px 8px;
+}
+.tactical-opt-in,
+.tactical-suspend {
+  display: none !important;
+}
+.tactical-frequency-warning {
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #b5121b;
+  background: #fff0f0;
+  color: #8f1018;
+  font: 800 10px monospace;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+.tactical-radio .section-title span {
+  font-size: 0;
+}
+.tactical-radio .section-title span:after {
+  content: "MANDATORY ATC · SIMULATOR VHF RADIO STACK";
+  font-size: 9px;
 }

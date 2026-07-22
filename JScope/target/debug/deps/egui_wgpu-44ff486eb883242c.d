@@ -1,0 +1,11 @@
+D:\JVA\JScope\target\debug\deps\egui_wgpu-44ff486eb883242c.d: C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\lib.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\renderer.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\setup.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\capture.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\winit.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\egui.wgsl C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\texture_copy.wgsl
+
+D:\JVA\JScope\target\debug\deps\libegui_wgpu-44ff486eb883242c.rmeta: C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\lib.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\renderer.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\setup.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\capture.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\winit.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\egui.wgsl C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\texture_copy.wgsl
+
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\lib.rs:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\renderer.rs:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\setup.rs:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\capture.rs:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\winit.rs:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\egui.wgsl:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\egui-wgpu-0.35.0\src\texture_copy.wgsl:

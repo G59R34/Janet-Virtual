@@ -113,7 +113,7 @@ create or replace function public.process_pirep_progression(p_pirep_id uuid) ret
 language plpgsql security definer set search_path='' as $$
 declare
   report public.pireps%rowtype; fl public.flights%rowtype; progress public.pilot_progression%rowtype;
-  accepted_count int; accepted_minutes int; route_count int; same_route_recent int; same_route_ever int; weekly_sectors int; weekly_quality int; weekly_routes int;
+  accepted_count int; accepted_minutes_total int; route_count int; same_route_recent int; same_route_ever int; weekly_sectors int; weekly_quality int; weekly_routes int;
   rolling_score numeric; quality_multiplier numeric; variety_multiplier numeric; base_credits int; awarded_credits int; mission_bonus int; first_route_bonus int;
   new_grade text; old_grade text; week_monday date; achievement record; objective record; achievement_balance int;
 begin
@@ -128,7 +128,7 @@ begin
   old_grade:=progress.grade_code;
 
   select count(*),coalesce(sum(p.flight_minutes),0),coalesce(avg(p.score),0)
-    into accepted_count,accepted_minutes,rolling_score
+    into accepted_count,accepted_minutes_total,rolling_score
   from (select pr.flight_minutes,pr.score from public.pireps pr where pr.pilot_id=report.pilot_id and pr.status in ('automatically_accepted','accepted') order by pr.submitted_at desc limit 10) p;
   select count(distinct (f.origin_airport_id,f.destination_airport_id)) into route_count
   from public.pireps pr join public.flights f on f.id=pr.flight_id
@@ -150,11 +150,11 @@ begin
   awarded_credits:=greatest(1,round(base_credits*quality_multiplier*variety_multiplier)+first_route_bonus+mission_bonus);
 
   select r.code into new_grade from public.ranks r
-  where r.active and accepted_minutes/60.0>=r.minimum_hours and accepted_count>=r.minimum_sectors
+  where r.active and accepted_minutes_total/60.0>=r.minimum_hours and accepted_count>=r.minimum_sectors
     and (r.code='TRN' or rolling_score>=r.minimum_proficiency)
   order by r.sort_order desc limit 1;
   new_grade:=coalesce(new_grade,'TRN');
-  update public.pilot_progression set grade_code=new_grade,accepted_sectors=accepted_count,accepted_minutes=accepted_minutes,
+  update public.pilot_progression set grade_code=new_grade,accepted_sectors=accepted_count,accepted_minutes=accepted_minutes_total,
     proficiency=round(rolling_score,2),credit_balance=credit_balance+awarded_credits,lifetime_credits=lifetime_credits+awarded_credits,
     distinct_routes=route_count,last_rewarded_at=now(),updated_at=now() where user_id=report.pilot_id returning * into progress;
   update public.profiles set rank=new_grade where id=report.pilot_id;

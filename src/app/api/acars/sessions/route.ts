@@ -1,2 +1,19 @@
-import {authenticateApiRequest} from "@/lib/supabase/api";import {acarsStartSchema} from "@/lib/validation";
-export async function POST(req:Request){const {db,user}=await authenticateApiRequest(req);if(!user)return Response.json({error:"Unauthorized"},{status:401});const parsed=acarsStartSchema.safeParse(await req.json());if(!parsed.success)return Response.json({error:parsed.error.flatten()},{status:400});const {flightId,aircraftId,simulator,clientVersion}=parsed.data;const {data:assignment}=await db.from("crew_assignments").select("id,flights!inner(aircraft_id,status)").eq("flight_id",flightId).eq("user_id",user.id).eq("flights.aircraft_id",aircraftId).maybeSingle();if(!assignment)return Response.json({error:"No eligible assignment for this aircraft"},{status:403});const {data,error}=await db.from("acars_sessions").insert({flight_id:flightId,pilot_id:user.id,aircraft_id:aircraftId,simulator,client_version:clientVersion}).select().single();return Response.json(error?{error:error.message}:data,{status:error?409:201})}
+import { authenticateApiRequest } from "@/lib/supabase/api";
+import { acarsStartSchema } from "@/lib/validation";
+export async function POST(req: Request) {
+  const { db, user } = await authenticateApiRequest(req);
+  if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const parsed = acarsStartSchema.safeParse(await req.json());
+  if (!parsed.success)
+    return Response.json({ error: parsed.error.flatten() }, { status: 400 });
+  const { flightId, aircraftId, simulator, clientVersion } = parsed.data;
+  const { data, error } = await db.rpc("start_mandatory_acars_session", {
+    p_flight_id: flightId,
+    p_aircraft_id: aircraftId,
+    p_simulator: simulator,
+    p_client_version: clientVersion,
+  });
+  return Response.json(error ? { error: error.message } : data, {
+    status: error ? 409 : 201,
+  });
+}

@@ -1,1 +1,3 @@
-fn main(){jcars_lib::run()}
+fn main() {
+    jcars_lib::run()
+}

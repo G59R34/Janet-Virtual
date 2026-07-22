@@ -1,0 +1,12 @@
+D:\JVA\JScope\target\release\deps\polycool-a1e604ea37810991.d: C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\lib.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\cubic.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\poly.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\poly_dyn.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\quadratic.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\yuksel.rs
+
+D:\JVA\JScope\target\release\deps\libpolycool-a1e604ea37810991.rlib: C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\lib.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\cubic.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\poly.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\poly_dyn.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\quadratic.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\yuksel.rs
+
+D:\JVA\JScope\target\release\deps\libpolycool-a1e604ea37810991.rmeta: C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\lib.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\cubic.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\poly.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\poly_dyn.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\quadratic.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\yuksel.rs
+
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\lib.rs:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\cubic.rs:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\poly.rs:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\poly_dyn.rs:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\quadratic.rs:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\polycool-0.4.0\src\yuksel.rs:

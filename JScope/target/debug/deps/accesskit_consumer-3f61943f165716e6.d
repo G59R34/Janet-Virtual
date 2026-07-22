@@ -1,0 +1,10 @@
+D:\JVA\JScope\target\debug\deps\accesskit_consumer-3f61943f165716e6.d: C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\lib.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\tree.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\node.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\filters.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\iterators.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\text.rs
+
+D:\JVA\JScope\target\debug\deps\libaccesskit_consumer-3f61943f165716e6.rmeta: C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\lib.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\tree.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\node.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\filters.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\iterators.rs C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\text.rs
+
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\lib.rs:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\tree.rs:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\node.rs:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\filters.rs:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\iterators.rs:
+C:\Users\carter\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\accesskit_consumer-0.35.0\src\text.rs:

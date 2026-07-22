@@ -6,6 +6,8 @@ import {
   Minus,
   Plane,
   Radio,
+  Headphones,
+  Mic,
   RefreshCw,
   ShieldCheck,
 } from "lucide-react";
@@ -14,7 +16,12 @@ import { isEnabled, enable, disable } from "@tauri-apps/plugin-autostart";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { jvaApi, supabase, type ClientConfig, type TripReport } from "./api";
 import { readSnapshot } from "./telemetry";
-import type { Assignment, Snapshot, TrackingState } from "./types";
+import type {
+  Assignment,
+  Snapshot,
+  TacticalState,
+  TrackingState,
+} from "./types";
 const native = () => "__TAURI_INTERNALS__" in window;
 export default function App() {
   const [session, setSession] =
@@ -31,6 +38,14 @@ export default function App() {
   const [message, setMessage] = useState("");
   const [autoStart, setAutoStart] = useState(false);
   const [config, setConfig] = useState<ClientConfig>();
+  const [acarsSessionId, setAcarsSessionId] = useState<string>();
+  const [tactical, setTactical] = useState<TacticalState | null>(null);
+  const [tacticalBusy, setTacticalBusy] = useState(false);
+  const [transmitting, setTransmitting] = useState(false);
+  const [audioInputs, setAudioInputs] = useState<MediaDeviceInfo[]>([]);
+  const [audioOutputs, setAudioOutputs] = useState<MediaDeviceInfo[]>([]);
+  const [inputDevice, setInputDevice] = useState("default");
+  const [outputDevice, setOutputDevice] = useState("default");
   const sessionId = useRef<string | undefined>(undefined);
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => {
@@ -46,6 +61,38 @@ export default function App() {
     if (session) refresh();
     else setAssignments([]);
   }, [session]);
+  useEffect(() => {
+    navigator.mediaDevices
+      ?.enumerateDevices()
+      .then((devices) => {
+        setAudioInputs(
+          devices.filter((device) => device.kind === "audioinput"),
+        );
+        setAudioOutputs(
+          devices.filter((device) => device.kind === "audiooutput"),
+        );
+      })
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (!acarsSessionId) return;
+    let active = true;
+    let timeout: number | undefined;
+    const poll = async () => {
+      try {
+        const result = await jvaApi.tacticalState(acarsSessionId);
+        if (active) setTactical(result.state);
+      } catch {
+      } finally {
+        if (active) timeout = window.setTimeout(poll, 3000);
+      }
+    };
+    void poll();
+    return () => {
+      active = false;
+      if (timeout) window.clearTimeout(timeout);
+    };
+  }, [acarsSessionId]);
   async function refresh() {
     try {
       setMessage("");
@@ -88,6 +135,8 @@ export default function App() {
         simulator,
       );
       sessionId.current = opened.id;
+      setAcarsSessionId(opened.id);
+      setTactical({ session: opened.tactical, instructions: [] });
       setTracking("tracking");
       await sample();
       timer.current = window.setInterval(
@@ -126,6 +175,8 @@ export default function App() {
         `PIREP submitted · score ${compiled.score} · ${compiled.status.replaceAll("_", " ")}`,
       );
       sessionId.current = undefined;
+      setAcarsSessionId(undefined);
+      setTactical(null);
       setTracking("idle");
       setPhase("COMPLETE");
       await refresh();
@@ -159,13 +210,49 @@ export default function App() {
     try {
       setMessage("");
       if (native()) await openUrl(assignment.flight.simbrief_plan.dispatch_url);
-      else window.open(assignment.flight.simbrief_plan.dispatch_url, "_blank", "noopener,noreferrer");
+      else
+        window.open(
+          assignment.flight.simbrief_plan.dispatch_url,
+          "_blank",
+          "noopener,noreferrer",
+        );
     } catch (error) {
-      setMessage(error instanceof Error ? `Unable to open SimBrief: ${error.message}` : "Unable to open SimBrief in the system browser.");
+      setMessage(
+        error instanceof Error
+          ? `Unable to open SimBrief: ${error.message}`
+          : "Unable to open SimBrief in the system browser.",
+      );
+    }
+  }
+  async function acknowledge(
+    id: string,
+    response:
+      "wilco" | "roger" | "unable" | "standby" | "request_clarification",
+  ) {
+    setTacticalBusy(true);
+    try {
+      await jvaApi.acknowledgeInstruction(id, response);
+      if (acarsSessionId)
+        setTactical((await jvaApi.tacticalState(acarsSessionId)).state);
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to acknowledge instruction",
+      );
+    } finally {
+      setTacticalBusy(false);
     }
   }
   if (!session) return <Login onMessage={setMessage} message={message} />;
   const assignment = assignments.find((x) => x.id === selected);
+  const requiredFrequency = Number(tactical?.session.displayFrequency ?? 0);
+  const radioTuned = Boolean(
+    snapshot &&
+    requiredFrequency &&
+    (Math.abs(snapshot.com1Active - requiredFrequency) < 0.006 ||
+      Math.abs(snapshot.com2Active - requiredFrequency) < 0.006),
+  );
   return (
     <main className="app">
       <header>
@@ -246,8 +333,15 @@ export default function App() {
         <section className="simbrief-plan">
           <div>
             <span>FLIGHT PLANNING</span>
-            <strong>{assignment.flight.simbrief_plan.status === "generated" ? "SIMBRIEF OFP READY" : "SIMBRIEF PLAN REQUIRED"}</strong>
-            <small>{assignment.flight.simbrief_plan.route ?? "Route, fuel, weather, and performance will be generated by SimBrief."}</small>
+            <strong>
+              {assignment.flight.simbrief_plan.status === "generated"
+                ? "SIMBRIEF OFP READY"
+                : "SIMBRIEF PLAN REQUIRED"}
+            </strong>
+            <small>
+              {assignment.flight.simbrief_plan.route ??
+                "Route, fuel, weather, and performance will be generated by SimBrief."}
+            </small>
           </div>
           <button onClick={openSimBrief}>OPEN SIMBRIEF</button>
         </section>
@@ -296,6 +390,163 @@ export default function App() {
           </div>
         )}
       </section>
+      {tracking === "tracking" && (
+        <section className="tactical-radio">
+          <div className="tactical-safety">
+            <ShieldCheck />
+            <p>
+              <b>PRIVATE TACTICAL SIMULATION</b> JCars is not VATSIM ATC. VATSIM
+              controllers, network rules, TCAS alerts, and operational safety
+              always take precedence.
+            </p>
+          </div>
+          <div className="section-title">
+            <div>
+              <span>
+                JCARS TACTICAL RADIO · SEPARATE FROM SIMULATOR / XPILOT RADIO
+              </span>
+              <h2>
+                {tactical?.session.positionName ?? "Tactical control available"}
+              </h2>
+            </div>
+            <i
+              className={
+                tactical?.session.status === "active" ? "online" : "offline"
+              }
+            >
+              <Radio />
+            </i>
+          </div>
+          {!tactical ? (
+            <button
+              className="tactical-opt-in"
+              disabled={tacticalBusy}
+              onClick={undefined}
+            >
+              {tacticalBusy ? "CONNECTING…" : "OPT IN TO TACTICAL CONTROL"}
+            </button>
+          ) : (
+            <>
+              <div className="tactical-grid">
+                <Metric
+                  label="CONTROLLER"
+                  value={tactical.session.controllerCallsign}
+                />
+                <Metric
+                  label="REQUIRED VHF"
+                  value={tactical.session.displayFrequency}
+                />
+                <Metric
+                  label="COM1 ACTIVE"
+                  value={(snapshot?.com1Active ?? 0).toFixed(3)}
+                />
+                <Metric
+                  label="COM2 ACTIVE"
+                  value={(snapshot?.com2Active ?? 0).toFixed(3)}
+                />
+                <Metric
+                  label="VOICE"
+                  value={tactical.session.voiceState.toUpperCase()}
+                />
+                <Metric
+                  label="STATUS"
+                  value={tactical.session.status.toUpperCase()}
+                />
+              </div>
+              {!radioTuned && (
+                <div className="tactical-frequency-warning">
+                  OFF FREQUENCY · TUNE COM1 OR COM2 TO{" "}
+                  {tactical.session.displayFrequency}
+                </div>
+              )}
+              <div className="audio-devices">
+                <label>
+                  <Mic /> INPUT
+                  <select
+                    value={inputDevice}
+                    onChange={(event) => setInputDevice(event.target.value)}
+                  >
+                    <option value="default">System default</option>
+                    {audioInputs.map((device) => (
+                      <option key={device.deviceId} value={device.deviceId}>
+                        {device.label || "Audio input"}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <Headphones /> OUTPUT
+                  <select
+                    value={outputDevice}
+                    onChange={(event) => setOutputDevice(event.target.value)}
+                  >
+                    <option value="default">System default</option>
+                    {audioOutputs.map((device) => (
+                      <option key={device.deviceId} value={device.deviceId}>
+                        {device.label || "Audio output"}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <button
+                className={`tactical-ptt ${transmitting ? "transmitting" : ""}`}
+                onMouseDown={() => setTransmitting(true)}
+                onMouseUp={() => setTransmitting(false)}
+                onMouseLeave={() => setTransmitting(false)}
+                disabled={tactical.session.voiceState !== "connected"}
+              >
+                JCARS PTT · {transmitting ? "TRANSMITTING" : "HOLD TO TALK"}
+              </button>
+              {tactical.instructions[0] && (
+                <div className="tactical-instruction">
+                  <span>JCARS TACTICAL INSTRUCTION</span>
+                  <strong>{tactical.instructions[0].text}</strong>
+                  <small>
+                    {tactical.instructions[0].type
+                      .replaceAll("_", " ")
+                      .toUpperCase()}{" "}
+                    ·{" "}
+                    {new Date(
+                      tactical.instructions[0].issuedAt,
+                    ).toLocaleTimeString()}
+                  </small>
+                  {!tactical.instructions[0].acknowledgement && (
+                    <div>
+                      {(
+                        [
+                          "wilco",
+                          "roger",
+                          "standby",
+                          "unable",
+                          "request_clarification",
+                        ] as const
+                      ).map((response) => (
+                        <button
+                          key={response}
+                          disabled={tacticalBusy}
+                          onClick={() =>
+                            acknowledge(tactical.instructions[0].id, response)
+                          }
+                        >
+                          {response.replaceAll("_", " ")}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              <button
+                className="tactical-suspend"
+                disabled={tacticalBusy || tactical.session.status !== "active"}
+                onClick={undefined}
+              >
+                SUSPEND TACTICAL CONTROL
+              </button>
+            </>
+          )}
+        </section>
+      )}
       {message && <div className="alert">{message}</div>}
       <button
         className={`track ${tracking}`}
