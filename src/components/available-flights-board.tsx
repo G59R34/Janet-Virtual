@@ -4,7 +4,7 @@ import {AvailableFlightsTable,AvailableFlight} from "@/components/available-flig
 export async function AvailableFlightsBoard({userId,roles}:{userId:string;roles:string[]}){
  const db=await createClient();
  const [{data,error},{data:assignments}]=await Promise.all([
-  db.from("flights").select("id,tracking_callsign,flight_number,scheduled_departure,scheduled_arrival,planned_altitude_ft,status,passenger_count,origin:airports!flights_origin_airport_id_fkey(local_code,display_label),destination:airports!flights_destination_airport_id_fkey(local_code,display_label),aircraft(registration),schedule_template:schedule_templates(name,aircraft_category)").in("status",["generated","awaiting_dispatch","released"]).order("scheduled_departure").limit(500),
+  db.from("flights").select("id,tracking_callsign,flight_number,scheduled_departure,scheduled_arrival,planned_altitude_ft,status,passenger_count,origin:airports!flights_origin_airport_id_fkey(local_code,display_label),destination:airports!flights_destination_airport_id_fkey(local_code,display_label),departure_stand:airport_stands!flights_departure_stand_id_fkey(code),arrival_stand:airport_stands!flights_arrival_stand_id_fkey(code),aircraft(registration),schedule_template:schedule_templates(name,aircraft_category)").in("status",["generated","awaiting_dispatch","released"]).order("scheduled_departure").limit(500),
   db.from("crew_assignments").select("flight_id,position,status").eq("user_id",userId).in("status",["assigned","accepted"])
  ]);
  const captainEligible=roles.some(role=>["captain","instructor","chief_pilot","owner","system_administrator"].includes(role));

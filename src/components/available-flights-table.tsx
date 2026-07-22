@@ -14,6 +14,8 @@ export type AvailableFlight = {
   passenger_count: number;
   origin: { local_code: string; display_label: string | null } | null;
   destination: { local_code: string; display_label: string | null } | null;
+  departure_stand: { code: string } | null;
+  arrival_stand: { code: string } | null;
   aircraft: { registration: string } | null;
   schedule_template: { name: string; aircraft_category: string | null } | null;
 };
@@ -133,9 +135,9 @@ export function AvailableFlightsTable({
                   </small>
                 </span>
                 <span className="route">
-                  <b>{f.origin?.local_code ?? "—"}</b>
+                  <b>{f.origin?.local_code ?? "—"}<small>{f.departure_stand?.code??"STAND TBD"}</small></b>
                   <i>→</i>
-                  <b>{f.destination?.local_code ?? "—"}</b>
+                  <b>{f.destination?.local_code ?? "—"}<small>{f.arrival_stand?.code??"STAND TBD"}</small></b>
                 </span>
                 <span>
                   <strong>
