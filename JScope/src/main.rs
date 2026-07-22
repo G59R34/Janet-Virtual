@@ -2,6 +2,7 @@
 mod api_native;
 mod app_native;
 mod models;
+mod voice_native;
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()

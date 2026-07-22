@@ -15,13 +15,14 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { isEnabled, enable, disable } from "@tauri-apps/plugin-autostart";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { jvaApi, supabase, type ClientConfig, type TripReport } from "./api";
-import { readSnapshot } from "./telemetry";
+import { readSnapshot, readTestSnapshot } from "./telemetry";
 import type {
   Assignment,
   Snapshot,
   TacticalState,
   TrackingState,
 } from "./types";
+import {WebRTCVoiceTransport,type VoiceConnectionState} from "./voice";
 const native = () => "__TAURI_INTERNALS__" in window;
 export default function App() {
   const [session, setSession] =
@@ -46,6 +47,10 @@ export default function App() {
   const [audioOutputs, setAudioOutputs] = useState<MediaDeviceInfo[]>([]);
   const [inputDevice, setInputDevice] = useState("default");
   const [outputDevice, setOutputDevice] = useState("default");
+  const [voice,setVoice]=useState<VoiceConnectionState>({status:"offline",participants:[],quality:0});
+  const [testMode, setTestMode] = useState(false);
+  const voiceTransport=useRef<WebRTCVoiceTransport|undefined>(undefined);
+  const testModeRef = useRef(false);
   const sessionId = useRef<string | undefined>(undefined);
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => {
@@ -56,6 +61,28 @@ export default function App() {
         .then(setAutoStart)
         .catch(() => {});
     return () => data.subscription.unsubscribe();
+  }, []);
+  useEffect(() => {
+    testModeRef.current = testMode;
+  }, [testMode]);
+  useEffect(() => {
+    const keybind = (event: KeyboardEvent) => {
+      if (!event.ctrlKey || event.altKey || event.metaKey || event.repeat || event.key.toLowerCase() !== "t") return;
+      event.preventDefault();
+      setTestMode((enabled) => {
+        const next = !enabled;
+        testModeRef.current = next;
+        setSnapshot(next ? readTestSnapshot() : null);
+        setMessage(
+          next
+            ? "TEST MODE ENABLED · SYNTHETIC AIRCRAFT CONNECTED AT KXTA · PRESS CTRL+T TO EXIT"
+            : "TEST MODE DISABLED · WAITING FOR A REAL SIMULATOR CONNECTION",
+        );
+        return next;
+      });
+    };
+    window.addEventListener("keydown", keybind);
+    return () => window.removeEventListener("keydown", keybind);
   }, []);
   useEffect(() => {
     if (session) refresh();
@@ -93,6 +120,17 @@ export default function App() {
       if (timeout) window.clearTimeout(timeout);
     };
   }, [acarsSessionId]);
+  useEffect(()=>{
+    if(!acarsSessionId||!tactical?.session.positionId)return;
+    const transport=new WebRTCVoiceTransport(setVoice);
+    voiceTransport.current=transport;
+    transport.connect(acarsSessionId,inputDevice,outputDevice).catch(error=>setVoice({status:"degraded",participants:[],quality:0,activeTransmitter:error instanceof Error?error.message:"VOICE CONNECTION FAILED"}));
+    return()=>{void transport.disconnect();if(voiceTransport.current===transport)voiceTransport.current=undefined;};
+  },[acarsSessionId,tactical?.session.positionId,inputDevice,outputDevice]);
+  async function ptt(active:boolean){
+    setTransmitting(active);
+    try{await voiceTransport.current?.setPushToTalk(active);}catch(e){setMessage(e instanceof Error?e.message:"PTT FAILED");}
+  }
   async function refresh() {
     try {
       setMessage("");
@@ -113,7 +151,7 @@ export default function App() {
       setMessage("Dispatch must assign an aircraft before tracking can begin.");
       return;
     }
-    const first = await readSnapshot();
+    const first = testModeRef.current ? readTestSnapshot() : await readSnapshot();
     setSnapshot(first);
     if (!first.connected) {
       setMessage(
@@ -126,7 +164,9 @@ export default function App() {
     setReport(undefined);
     setPoints(0);
     try {
-      const simulator = first.provider.startsWith("X-Plane")
+      const simulator = testModeRef.current
+        ? "JCars Test Mode"
+        : first.provider.startsWith("X-Plane")
         ? "X-Plane"
         : "Microsoft Flight Simulator";
       const opened = await jvaApi.startSession(
@@ -150,7 +190,7 @@ export default function App() {
   }
   async function sample() {
     try {
-      const next = await readSnapshot();
+      const next = testModeRef.current ? readTestSnapshot() : await readSnapshot();
       setSnapshot(next);
       if (next.connected && sessionId.current) {
         const accepted = await jvaApi.telemetry(sessionId.current, next);
@@ -278,6 +318,12 @@ export default function App() {
           <LogOut /> Sign out
         </button>
       </section>
+      {testMode && (
+        <section className="test-mode-banner">
+          <strong>TEST MODE · CTRL+T</strong>
+          <span>SYNTHETIC AIRCRAFT ONLINE AT KXTA · VOICE TESTING ENABLED WITHOUT SIM</span>
+        </section>
+      )}
       <section className="assignment">
         <div className="section-title">
           <div>
@@ -446,7 +492,7 @@ export default function App() {
                 />
                 <Metric
                   label="VOICE"
-                  value={tactical.session.voiceState.toUpperCase()}
+                  value={voice.status.toUpperCase()}
                 />
                 <Metric
                   label="STATUS"
@@ -459,6 +505,12 @@ export default function App() {
                   {tactical.session.displayFrequency}
                 </div>
               )}
+              <div className="tactical-voice-status">
+                <strong>JCARS TACTICAL RADIO · {voice.status.toUpperCase()}</strong>
+                <span>QUALITY {voice.quality}% · {voice.participants.length} PARTICIPANTS</span>
+                <span>ACTIVE: {voice.activeTransmitter??(transmitting?"YOU":"NONE")}</span>
+                <small>SEPARATE FROM SIMULATOR / XPILOT / VATSIM RADIO</small>
+              </div>
               <div className="audio-devices">
                 <label>
                   <Mic /> INPUT
@@ -491,10 +543,10 @@ export default function App() {
               </div>
               <button
                 className={`tactical-ptt ${transmitting ? "transmitting" : ""}`}
-                onMouseDown={() => setTransmitting(true)}
-                onMouseUp={() => setTransmitting(false)}
-                onMouseLeave={() => setTransmitting(false)}
-                disabled={tactical.session.voiceState !== "connected"}
+                onMouseDown={() => void ptt(true)}
+                onMouseUp={() => void ptt(false)}
+                onMouseLeave={() => void ptt(false)}
+                disabled={voice.status!=="direct"&&voice.status!=="relayed"}
               >
                 JCARS PTT · {transmitting ? "TRANSMITTING" : "HOLD TO TALK"}
               </button>

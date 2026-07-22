@@ -27,3 +27,29 @@ export async function readSnapshot(): Promise<Snapshot> {
     transponderCode: 0,
   };
 }
+
+export function readTestSnapshot(): Snapshot {
+  return {
+    connected: true,
+    provider: "JCars Test Mode · KXTA synthetic aircraft",
+    latitude: 37.233022222,
+    longitude: -115.792455556,
+    altitude: 4494,
+    heading: 320,
+    groundSpeed: 0,
+    verticalSpeed: 0,
+    fuel: 1100,
+    onGround: true,
+    engineState: true,
+    parkingBrake: true,
+    gear: 1,
+    flaps: 0,
+    paused: false,
+    simulatorTime: new Date().toISOString(),
+    com1Active: 118.3,
+    com1Standby: 121.5,
+    com2Active: 118.3,
+    com2Standby: 121.5,
+    transponderCode: 2607,
+  };
+}

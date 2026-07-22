@@ -1,0 +1,43 @@
+services:
+  livekit:
+    # Pin before a production rollout after validating the release in staging.
+    image: livekit/livekit-server:latest
+    container_name: jva-voice
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - .env
+    environment:
+      # LiveKit supports its full YAML configuration in LIVEKIT_CONFIG. Compose
+      # expands the API key and secret before the container is started, so the
+      # mounted repository never needs a real credential file.
+      LIVEKIT_CONFIG: |
+        port: 7880
+        bind_addresses:
+          # Caddy is the only public signaling endpoint.
+          - 127.0.0.1
+        log_level: info
+        rtc:
+          tcp_port: 7881
+          port_range_start: 50000
+          port_range_end: 50100
+          use_external_ip: ${LIVEKIT_USE_EXTERNAL_IP}
+        keys:
+          ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
+        turn:
+          enabled: false
+  caddy:
+    image: caddy:2-alpine
+    container_name: jva-voice-proxy
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - .env
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

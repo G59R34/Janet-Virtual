@@ -1,0 +1,6 @@
+# Public HTTPS/WSS reverse proxy. The bootstrap script writes the configured
+# hostname into .env; Caddy obtains and renews the trusted certificate itself.
+{$JVA_VOICE_HOST} {
+  email {$JVA_VOICE_TLS_EMAIL}
+  reverse_proxy 127.0.0.1:7880
+}

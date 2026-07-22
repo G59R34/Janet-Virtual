@@ -1,4 +1,8 @@
-use crate::{api_native::Api, models::*};
+use crate::{
+    api_native::Api,
+    models::*,
+    voice_native::{VoiceEngine, VoiceEngineState},
+};
 use eframe::egui::{self, Color32, FontId, Pos2, Sense, Shape, Stroke, Vec2};
 use std::{
     fs,
@@ -16,10 +20,22 @@ const CYAN: Color32 = Color32::from_rgb(85, 190, 214);
 const AMBER: Color32 = Color32::from_rgb(236, 190, 80);
 enum Event {
     Logged(Result<AuthSession, String>),
+    Refreshed(Result<AuthSession, String>, RetryAction),
     Opened(Result<ControllerSession, String>),
     Claimed(Result<String, String>),
     Snapshot(Result<Snapshot, String>),
     Issued(Result<String, String>),
+    VoiceHosted(Result<VoiceHostResponse, String>),
+    VoicePolled(Result<VoicePoll, String>),
+    VoiceClosed(Result<String, String>),
+    Vatsim(Result<Vec<VatsimController>, String>),
+}
+#[derive(Clone, Copy)]
+enum RetryAction {
+    Open,
+    Claim,
+    Snapshot,
+    HostVoice,
 }
 #[derive(Default)]
 struct Layers {
@@ -36,6 +52,17 @@ struct RadarVector {
     end: [f64; 2],
     aircraft_id: String,
 }
+
+fn vatsim_position_matches(callsign: &str, prefixes: &[&str], suffix: &str) -> bool {
+    let callsign = callsign.to_ascii_uppercase();
+    callsign.ends_with(suffix) && prefixes.iter().any(|prefix| callsign.starts_with(prefix))
+}
+
+fn is_unauthorized(error: &str) -> bool {
+    error.trim().eq_ignore_ascii_case("unauthorized")
+        || error.to_ascii_lowercase().contains("jwt expired")
+}
+
 pub struct JScopeApp {
     api: Api,
     tx: Sender<Event>,
@@ -43,6 +70,8 @@ pub struct JScopeApp {
     auth: Option<AuthSession>,
     controller: Option<ControllerSession>,
     position_session: String,
+    resume_position: bool,
+    refresh_auth_on_start: bool,
     selected_position: String,
     safety: bool,
     email: String,
@@ -64,6 +93,18 @@ pub struct JScopeApp {
     vector_preview: Option<[f64; 2]>,
     radar_vectors: Vec<RadarVector>,
     squawk_code: String,
+    voice: Option<VoiceGrant>,
+    voice_participants: Vec<VoiceParticipant>,
+    last_voice_poll: Instant,
+    voice_after: i64,
+    voice_mode: String,
+    voice_engine: VoiceEngine,
+    voice_engine_state: VoiceEngineState,
+    controller_transmitting: bool,
+    vatsim_controllers: Vec<VatsimController>,
+    vatsim_error: String,
+    vatsim_received: bool,
+    last_vatsim_poll: Instant,
 }
 impl JScopeApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
@@ -77,6 +118,12 @@ impl JScopeApp {
         cc.egui_ctx.set_visuals(visuals);
         let (tx, rx) = mpsc::channel();
         let persisted = load_session();
+        let resume_position = persisted
+            .as_ref()
+            .is_some_and(|session| !session.position_session.is_empty());
+        let refresh_auth_on_start = persisted
+            .as_ref()
+            .is_some_and(|session| session.auth.expires_at <= chrono::Utc::now().timestamp() + 60);
         Self {
             api: Api::new(),
             tx,
@@ -87,6 +134,8 @@ impl JScopeApp {
                 .as_ref()
                 .map(|p| p.position_session.clone())
                 .unwrap_or_default(),
+            resume_position,
+            refresh_auth_on_start,
             selected_position: persisted
                 .as_ref()
                 .map(|p| p.selected_position.clone())
@@ -118,6 +167,18 @@ impl JScopeApp {
             vector_preview: None,
             radar_vectors: Vec::new(),
             squawk_code: String::new(),
+            voice: None,
+            voice_participants: Vec::new(),
+            last_voice_poll: Instant::now() - Duration::from_secs(10),
+            voice_after: 0,
+            voice_mode: "direct-preferred".into(),
+            voice_engine: VoiceEngine::new(),
+            voice_engine_state: VoiceEngineState::Offline,
+            controller_transmitting: false,
+            vatsim_controllers: Vec::new(),
+            vatsim_error: String::new(),
+            vatsim_received: false,
+            last_vatsim_poll: Instant::now() - Duration::from_secs(30),
         }
     }
     fn spawn<F: FnOnce() -> Event + Send + 'static>(&mut self, f: F) {
@@ -133,6 +194,23 @@ impl JScopeApp {
         let password = self.password.clone();
         self.spawn(move || Event::Logged(api.login(&email, &password).map_err(|e| e.to_string())))
     }
+    fn refresh_auth(&mut self, retry: RetryAction) {
+        let Some(auth) = self.auth.clone() else {
+            return;
+        };
+        let api = self.api.clone();
+        self.spawn(move || {
+            Event::Refreshed(api.refresh_auth(&auth).map_err(|e| e.to_string()), retry)
+        });
+    }
+    fn retry_after_refresh(&mut self, retry: RetryAction) {
+        match retry {
+            RetryAction::Open => self.open(),
+            RetryAction::Claim => self.claim(),
+            RetryAction::Snapshot => self.poll(),
+            RetryAction::HostVoice => self.host_voice(),
+        }
+    }
     fn open(&mut self) {
         let (api, auth) = (self.api.clone(), self.auth.clone().unwrap());
         self.spawn(move || Event::Opened(api.open(&auth).map_err(|e| e.to_string())))
@@ -145,6 +223,57 @@ impl JScopeApp {
             self.selected_position.clone(),
         );
         self.spawn(move || Event::Claimed(api.claim(&auth, &c, &p).map_err(|e| e.to_string())))
+    }
+    fn host_voice(&mut self) {
+        let (api, auth, c, p, mode) = (
+            self.api.clone(),
+            self.auth.clone().unwrap(),
+            self.controller.clone().unwrap(),
+            self.position_session.clone(),
+            self.voice_mode.clone(),
+        );
+        self.spawn(move || {
+            Event::VoiceHosted(
+                api.host_voice(&auth, &c, &p, &mode)
+                    .map_err(|e| e.to_string()),
+            )
+        })
+    }
+    fn poll_voice(&mut self) {
+        if self.busy
+            || self.last_voice_poll.elapsed() < Duration::from_secs(1)
+            || self.voice.is_none()
+        {
+            return;
+        }
+        self.last_voice_poll = Instant::now();
+        let (api, auth, voice, after) = (
+            self.api.clone(),
+            self.auth.clone().unwrap(),
+            self.voice.clone().unwrap(),
+            self.voice_after,
+        );
+        self.spawn(move || {
+            Event::VoicePolled(
+                api.poll_voice(&auth, &voice, after)
+                    .map_err(|e| e.to_string()),
+            )
+        })
+    }
+    fn close_voice(&mut self) {
+        let (api, auth, c, p) = (
+            self.api.clone(),
+            self.auth.clone().unwrap(),
+            self.controller.clone().unwrap(),
+            self.position_session.clone(),
+        );
+        self.spawn(move || {
+            Event::VoiceClosed(
+                api.close_voice(&auth, &c, &p)
+                    .map(|_| "RADIO CLOSED".into())
+                    .map_err(|e| e.to_string()),
+            )
+        })
     }
     fn poll(&mut self) {
         if self.busy
@@ -161,6 +290,19 @@ impl JScopeApp {
             self.controller.clone().unwrap(),
         );
         self.spawn(move || Event::Snapshot(api.snapshot(&auth, &c).map_err(|e| e.to_string())))
+    }
+    fn poll_vatsim(&mut self) {
+        if self.last_vatsim_poll.elapsed() < Duration::from_secs(15) {
+            return;
+        }
+        self.last_vatsim_poll = Instant::now();
+        let api = self.api.clone();
+        let tx = self.tx.clone();
+        thread::spawn(move || {
+            let _ = tx.send(Event::Vatsim(
+                api.vatsim_controllers().map_err(|error| error.to_string()),
+            ));
+        });
     }
     fn issue(&mut self) {
         let (api, auth, c, p, a, k, t) = (
@@ -211,7 +353,9 @@ impl JScopeApp {
     }
     fn events(&mut self) {
         while let Ok(event) = self.rx.try_recv() {
-            self.busy = false;
+            if !matches!(&event, Event::Vatsim(_)) {
+                self.busy = false;
+            }
             match event {
                 Event::Logged(r) => match r {
                     Ok(a) => {
@@ -220,6 +364,23 @@ impl JScopeApp {
                         self.open()
                     }
                     Err(e) => self.message = e,
+                },
+                Event::Refreshed(r, retry) => match r {
+                    Ok(auth) => {
+                        self.auth = Some(auth);
+                        self.refresh_auth_on_start = false;
+                        self.save();
+                        self.retry_after_refresh(retry);
+                    }
+                    Err(error) => {
+                        self.auth = None;
+                        self.controller = None;
+                        self.position_session.clear();
+                        self.message = format!("SESSION EXPIRED · SIGN IN AGAIN · {error}");
+                        if let Some(path) = session_path() {
+                            let _ = fs::remove_file(path);
+                        }
+                    }
                 },
                 Event::Opened(r) => match r {
                     Ok(c) => {
@@ -233,19 +394,41 @@ impl JScopeApp {
                         self.controller = Some(c);
                         self.save()
                     }
-                    Err(e) => self.message = e,
+                    Err(e) => {
+                        if is_unauthorized(&e) {
+                            self.refresh_auth(RetryAction::Open)
+                        } else {
+                            self.message = e
+                        }
+                    }
                 },
                 Event::Claimed(r) => match r {
                     Ok(p) => {
+                        self.resume_position = false;
                         self.position_session = p;
                         self.message = "POSITION ACQUIRED".into();
-                        self.save()
+                        self.save();
+                        self.host_voice()
                     }
-                    Err(e) => self.message = e,
+                    Err(e) => {
+                        if is_unauthorized(&e) {
+                            self.refresh_auth(RetryAction::Claim);
+                            continue;
+                        }
+                        self.resume_position = false;
+                        self.position_session.clear();
+                        self.voice = None;
+                        self.message = e;
+                        self.save();
+                    }
                 },
                 Event::Snapshot(r) => match r {
                     Ok(s) => self.snapshot = s,
                     Err(e) => {
+                        if is_unauthorized(&e) {
+                            self.refresh_auth(RetryAction::Snapshot);
+                            continue;
+                        }
                         self.message = e.clone();
                         if e.to_lowercase().contains("expired") {
                             self.controller = None;
@@ -260,6 +443,60 @@ impl JScopeApp {
                         self.instruction_text.clear()
                     }
                     Err(e) => self.message = e,
+                },
+                Event::VoiceHosted(r) => match r {
+                    Ok(v) => {
+                        self.message = "CONNECTING TO CENTRAL JVA VOICE".into();
+                        self.voice_engine.start_central(v.central);
+                        self.voice = Some(v.radio)
+                    }
+                    Err(e) => {
+                        if is_unauthorized(&e) {
+                            self.refresh_auth(RetryAction::HostVoice);
+                            continue;
+                        }
+                        if e.to_ascii_lowercase()
+                            .contains("authoritative position lock required")
+                        {
+                            self.position_session.clear();
+                            self.voice = None;
+                            self.message = "REVALIDATING CONTROLLER POSITION LOCK".into();
+                            self.claim();
+                        } else {
+                            self.message = e;
+                        }
+                    }
+                },
+                Event::VoicePolled(r) => match r {
+                    Ok(v) => {
+                        self.voice_engine.events(v.events.clone());
+                        for event in &v.events {
+                            if let Some(id) = event.get("id").and_then(|v| v.as_i64()) {
+                                self.voice_after = self.voice_after.max(id)
+                            }
+                        }
+                        self.voice_participants = v.participants
+                    }
+                    Err(e) => {
+                        self.message = e;
+                        self.voice = None
+                    }
+                },
+                Event::VoiceClosed(r) => match r {
+                    Ok(m) => {
+                        self.message = m;
+                        self.voice = None;
+                        self.voice_participants.clear()
+                    }
+                    Err(e) => self.message = e,
+                },
+                Event::Vatsim(r) => match r {
+                    Ok(controllers) => {
+                        self.vatsim_controllers = controllers;
+                        self.vatsim_error.clear();
+                        self.vatsim_received = true;
+                    }
+                    Err(error) => self.vatsim_error = error,
                 },
             }
         }
@@ -282,6 +519,8 @@ impl JScopeApp {
         self.auth = None;
         self.controller = None;
         self.position_session.clear();
+        self.voice = None;
+        self.voice_engine.stop();
         if let Some(p) = session_path() {
             let _ = fs::remove_file(p);
         }
@@ -294,12 +533,48 @@ impl JScopeApp {
 impl eframe::App for JScopeApp {
     fn logic(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
         self.events();
+        if self.refresh_auth_on_start && !self.busy && self.auth.is_some() {
+            self.refresh_auth_on_start = false;
+            self.refresh_auth(RetryAction::Claim);
+        }
+        if self.resume_position
+            && !self.busy
+            && self.auth.is_some()
+            && self.controller.is_some()
+            && !self.selected_position.is_empty()
+        {
+            self.resume_position = false;
+            self.claim();
+        }
         self.poll();
+        self.poll_voice();
+        self.poll_vatsim();
+        for state in self.voice_engine.updates().collect::<Vec<_>>() {
+            if let VoiceEngineState::Failed(error) = &state {
+                self.message = error.clone();
+            }
+            self.voice_engine_state = state;
+        }
         ctx.request_repaint_after(Duration::from_millis(250));
     }
     fn ui(&mut self, ui: &mut egui::Ui, _: &mut eframe::Frame) {
         if self.auth.is_none() || self.controller.is_none() || self.position_session.is_empty() {
             self.gate(ui);
+            if self.auth.is_some() {
+                egui::Area::new(egui::Id::new("session-recovery"))
+                    .anchor(egui::Align2::CENTER_BOTTOM, Vec2::new(0.0, -18.0))
+                    .show(ui.ctx(), |area| {
+                        egui::Frame::new()
+                            .fill(PANEL)
+                            .stroke(Stroke::new(1.0, LINE))
+                            .inner_margin(8.0)
+                            .show(area, |area| {
+                                if area.button("SIGN OUT & CLEAR CONTROLLER SESSION").clicked() {
+                                    self.logout();
+                                }
+                            });
+                    });
+            }
             return;
         }
         self.scope(ui)
@@ -316,7 +591,7 @@ impl JScopeApp {
             .cloned()
             .unwrap_or_default();
         egui::Panel::top("command")
-            .exact_size(58.0)
+            .exact_size(88.0)
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.heading(egui::RichText::new("JScope").color(GREEN).size(24.0));
@@ -349,12 +624,149 @@ impl JScopeApp {
                         ui.label(format!("AIRAC {}", self.sector.metadata.cycle));
                     });
                 });
+                ui.separator();
+                ui.horizontal(|ui| {
+                    ui.label(
+                        egui::RichText::new("VATSIM COORDINATION")
+                            .color(CYAN)
+                            .strong(),
+                    );
+                    ui.separator();
+                    egui::ScrollArea::horizontal()
+                        .id_salt("vatsim-coordination-strip")
+                        .show(ui, |ui| {
+                            ui.horizontal(|ui| {
+                                for (label, prefixes, suffix) in [
+                                    ("LAX CTR", &["LAX"][..], "_CTR"),
+                                    ("OAK CTR", &["OAK"][..], "_CTR"),
+                                    ("SLC CTR", &["SLC"][..], "_CTR"),
+                                    ("LAS APP", &["LAS"][..], "_APP"),
+                                    ("NJK APP", &["NJK"][..], "_APP"),
+                                    ("EDW APP", &["EDW"][..], "_APP"),
+                                    (
+                                        "SOCAL APP",
+                                        &["LAX", "BUR", "ONT", "SNA", "SAN"][..],
+                                        "_APP",
+                                    ),
+                                ] {
+                                    let online = self
+                                        .vatsim_controllers
+                                        .iter()
+                                        .filter(|controller| {
+                                            vatsim_position_matches(
+                                                &controller.callsign,
+                                                prefixes,
+                                                suffix,
+                                            )
+                                        })
+                                        .collect::<Vec<_>>();
+                                    if online.is_empty() {
+                                        let state = if self.vatsim_received {
+                                            "OFFLINE"
+                                        } else {
+                                            "CHECKING"
+                                        };
+                                        ui.label(
+                                            egui::RichText::new(format!("{label} {state}"))
+                                                .color(LINE),
+                                        );
+                                    } else {
+                                        for controller in online {
+                                            ui.label(
+                                                egui::RichText::new(format!(
+                                                    "{} {} ONLINE",
+                                                    controller.callsign, controller.frequency
+                                                ))
+                                                .color(GREEN)
+                                                .strong(),
+                                            );
+                                        }
+                                    }
+                                    ui.separator();
+                                }
+                                if !self.vatsim_error.is_empty() {
+                                    ui.label(egui::RichText::new("FEED UNAVAILABLE").color(AMBER));
+                                }
+                            });
+                        });
+                });
             });
         egui::Panel::right("lists")
             .default_size(310.0)
             .min_size(260.0)
             .show(ctx, |ui| {
                 ui.heading(egui::RichText::new("CONTROLLER LISTS").color(GREEN));
+                ui.group(|ui| {
+                    ui.label(egui::RichText::new("TACTICAL RADIO / CONTROLLER HOST").color(GREEN));
+                    if let Some(voice) = &self.voice {
+                        ui.label(format!(
+                            "{} · SIGNALING READY",
+                            voice.position_id.to_uppercase()
+                        ));
+                        let media = match &self.voice_engine_state {
+                            VoiceEngineState::Offline => "MEDIA OFFLINE".into(),
+                            VoiceEngineState::Listening => "UDP 30814 LISTENING".into(),
+                            VoiceEngineState::Connecting => "WEBRTC NEGOTIATING".into(),
+                            VoiceEngineState::Connected => "MEDIA ONLINE · DIRECT".into(),
+                            VoiceEngineState::Central => "MEDIA ONLINE · CENTRAL JVA VOICE".into(),
+                            VoiceEngineState::Failed(e) => format!("MEDIA FAILED · {e}"),
+                        };
+                        ui.label(egui::RichText::new(media).color(
+                            if matches!(self.voice_engine_state, VoiceEngineState::Connected) {
+                                GREEN
+                            } else {
+                                AMBER
+                            },
+                        ));
+                        let keyboard_ptt =
+                            ui.input(|i| i.modifiers.ctrl && i.key_down(egui::Key::Space));
+                        let response = ui.add_enabled(
+                            matches!(self.voice_engine_state, VoiceEngineState::Connected|VoiceEngineState::Central),
+                            egui::Button::new(if self.controller_transmitting {
+                                "TRANSMITTING"
+                            } else {
+                                "HOLD PTT - CTRL+SPACE"
+                            }),
+                        );
+                        let active = response.is_pointer_button_down_on() || keyboard_ptt;
+                        if active != self.controller_transmitting {
+                            self.controller_transmitting = active;
+                            self.voice_engine.ptt(active);
+                        }
+                        ui.label(format!(
+                            "MODE {} · {} PILOTS",
+                            voice.transport_mode.to_uppercase(),
+                            self.voice_participants
+                                .iter()
+                                .filter(|p| p.role == "pilot")
+                                .count()
+                        ));
+                        for participant in &self.voice_participants {
+                            ui.label(format!(
+                                "{}  {}  {}%{}",
+                                participant.callsign,
+                                participant.mode.as_deref().unwrap_or("connecting"),
+                                participant.quality.unwrap_or(0),
+                                if participant.transmitting { "  TX" } else { "" }
+                            ));
+                        }
+                        if ui
+                            .add_enabled(!self.busy, egui::Button::new("CLOSE RADIO"))
+                            .clicked()
+                        {
+                            self.close_voice()
+                        }
+                    } else {
+                        ui.label(egui::RichText::new("RADIO OFFLINE").color(Color32::LIGHT_RED));
+                        if ui
+                            .add_enabled(!self.busy, egui::Button::new("RETRY RADIO HOST"))
+                            .clicked()
+                        {
+                            self.claim()
+                        }
+                    }
+                });
+                ui.separator();
                 ui.label(format!(
                     "{} PARTICIPATING TARGETS",
                     self.snapshot.aircraft.len()
@@ -499,10 +911,7 @@ impl JScopeApp {
                         self.vector_preview = None;
                     }
                     ui.separator();
-                    ui.label(format!(
-                        "SERVER {}",
-                        if self.busy { "SYNC" } else { "ONLINE" }
-                    ));
+                    ui.label("SERVER ONLINE");
                     ui.separator();
                     ui.label("VHF RADIO STACK / JCARS TELEMETRY");
                     ui.separator();

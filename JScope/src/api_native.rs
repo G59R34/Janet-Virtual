@@ -3,6 +3,7 @@ use anyhow::{Context, Result, anyhow};
 use reqwest::blocking::Client;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
+use std::time::Duration;
 #[derive(Clone)]
 pub struct Api {
     http: Client,
@@ -61,6 +62,29 @@ impl Api {
             expires_at: chrono::Utc::now().timestamp() + v.expires_in,
         })
     }
+    pub fn refresh_auth(&self, auth: &AuthSession) -> Result<AuthSession> {
+        #[derive(serde::Deserialize)]
+        struct Refresh {
+            access_token: String,
+            refresh_token: String,
+            expires_in: i64,
+        }
+        let response = self
+            .http
+            .post(format!(
+                "{}/auth/v1/token?grant_type=refresh_token",
+                self.supabase
+            ))
+            .header("apikey", &self.key)
+            .json(&json!({"refresh_token": auth.refresh_token}))
+            .send()?;
+        let refreshed: Refresh = Self::decode(response)?;
+        Ok(AuthSession {
+            access_token: refreshed.access_token,
+            refresh_token: refreshed.refresh_token,
+            expires_at: chrono::Utc::now().timestamp() + refreshed.expires_in,
+        })
+    }
     fn request<T: DeserializeOwned>(
         &self,
         auth: &AuthSession,
@@ -105,6 +129,17 @@ impl Api {
     pub fn snapshot(&self, a: &AuthSession, c: &ControllerSession) -> Result<Snapshot> {
         self.request(a, "/api/jscope/snapshot", None, Some(&c.token))
     }
+    pub fn vatsim_controllers(&self) -> Result<Vec<VatsimController>> {
+        let response = self
+            .http
+            .get("https://data.vatsim.net/v3/vatsim-data.json")
+            .timeout(Duration::from_secs(8))
+            .send()?;
+        let mut controllers = Self::decode::<VatsimFeed>(response)?.controllers;
+        controllers.retain(|controller| is_nttr_coordination_position(&controller.callsign));
+        controllers.sort_by(|a, b| a.callsign.cmp(&b.callsign));
+        Ok(controllers)
+    }
     pub fn instruction(
         &self,
         a: &AuthSession,
@@ -117,4 +152,60 @@ impl Api {
     ) -> Result<Value> {
         self.request(a,"/api/jscope/instructions",Some(json!({"positionSessionId":position_session,"aircraftSessionId":aircraft,"type":kind,"parameters":parameters,"text":text,"nonce":uuid::Uuid::new_v4().to_string()})),Some(&c.token))
     }
+    pub fn host_voice(
+        &self,
+        a: &AuthSession,
+        c: &ControllerSession,
+        position_session: &str,
+        mode: &str,
+    ) -> Result<VoiceHostResponse> {
+        self.request(
+            a,
+            "/api/voice/radio",
+            Some(
+                json!({"action":"host","positionSessionId":position_session,"transportMode":mode}),
+            ),
+            Some(&c.token),
+        )
+    }
+    pub fn poll_voice(&self, a: &AuthSession, grant: &VoiceGrant, after: i64) -> Result<VoicePoll> {
+        self.request(a,"/api/voice/radio",Some(json!({"action":"poll","roomId":grant.room_id,"credential":grant.credential,"after":after})),None)
+    }
+    pub fn close_voice(
+        &self,
+        a: &AuthSession,
+        c: &ControllerSession,
+        position_session: &str,
+    ) -> Result<Value> {
+        self.request(
+            a,
+            "/api/voice/radio",
+            Some(json!({"action":"close","positionSessionId":position_session})),
+            Some(&c.token),
+        )
+    }
+    pub fn voice_signal(
+        &self,
+        a: &AuthSession,
+        grant: &VoiceGrant,
+        sequence: i64,
+        event_type: &str,
+        recipient: &str,
+        payload: Value,
+    ) -> Result<Value> {
+        self.request(a,"/api/voice/radio",Some(json!({"action":"signal","roomId":grant.room_id,"credential":grant.credential,"sequence":sequence,"type":event_type,"recipientId":recipient,"payload":payload})),None)
+    }
+}
+
+fn is_nttr_coordination_position(callsign: &str) -> bool {
+    let callsign = callsign.to_ascii_uppercase();
+    let artcc = callsign.ends_with("_CTR")
+        && ["LAX", "OAK", "SLC"]
+            .iter()
+            .any(|prefix| callsign.starts_with(prefix));
+    let approach = callsign.ends_with("_APP")
+        && ["LAS", "NJK", "EDW", "LAX", "BUR", "ONT", "SNA", "SAN"]
+            .iter()
+            .any(|prefix| callsign.starts_with(prefix));
+    artcc || approach
 }

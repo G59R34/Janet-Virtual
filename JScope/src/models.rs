@@ -59,6 +59,59 @@ pub struct PersistedSession {
     pub position_session: String,
     pub selected_position: String,
 }
+#[derive(Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoiceGrant {
+    pub room_id: String,
+    pub operation_id: String,
+    pub position_id: String,
+    pub status: String,
+    pub transport_mode: String,
+    pub credential: String,
+    pub credential_expires_at: String,
+    pub subject_id: String,
+}
+#[derive(Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VoiceParticipant {
+    pub subject_id: String,
+    pub callsign: String,
+    pub role: String,
+    pub state: String,
+    pub mode: Option<String>,
+    pub quality: Option<i64>,
+    pub transmitting: bool,
+}
+#[derive(Clone, Default, Deserialize)]
+pub struct VoicePoll {
+    pub events: Vec<serde_json::Value>,
+    pub participants: Vec<VoiceParticipant>,
+}
+#[derive(Clone, Default, Deserialize)]
+pub struct VoiceHostResponse {
+    pub radio: VoiceGrant,
+    pub central: CentralVoiceGrant,
+}
+#[derive(Clone, Default, Deserialize)]
+pub struct CentralVoiceGrant {
+    pub mode: String,
+    pub url: String,
+    pub token: String,
+    pub room_name: String,
+    pub expires_in: i64,
+}
+
+#[derive(Clone, Default, Deserialize)]
+pub struct VatsimController {
+    pub callsign: String,
+    pub frequency: String,
+}
+
+#[derive(Clone, Default, Deserialize)]
+pub struct VatsimFeed {
+    #[serde(default)]
+    pub controllers: Vec<VatsimController>,
+}
 
 #[derive(Clone, Default, Deserialize)]
 pub struct SectorMetadata {

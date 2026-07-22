@@ -68,6 +68,10 @@ export type TripReport = {
   landingRate: number | null;
   violations: string[];
 };
+export type VoiceRoomGrant={roomId:string;operationId:string;positionId:string;status:string;transportMode:"direct-preferred";credential:string;credentialExpiresAt:string;subjectId:string;hostSubjectId:string};
+export type CentralVoiceGrant={mode:"central";url:string;token:string;roomName:string;expiresIn:number};
+export type VoiceEvent={id:number;type:string;senderId:string;payload:Record<string,unknown>;createdAt:string};
+export type VoiceParticipant={subjectId:string;callsign:string;role:string;state:string;mode:string|null;quality:number|null;transmitting:boolean};
 export const jvaApi = {
   config: () => request<ClientConfig>("/api/acars/config"),
   assignments: () =>
@@ -140,4 +144,10 @@ export const jvaApi = {
       `/api/acars/tactical/instructions/${instructionId}/ack`,
       { method: "POST", body: JSON.stringify({ response }) },
     ),
+  voiceJoin:(acarsSessionId:string)=>
+    request<{radio:VoiceRoomGrant;central:CentralVoiceGrant}>("/api/voice/radio",{method:"POST",body:JSON.stringify({action:"join",acarsSessionId,transportMode:"direct-preferred"})}),
+  voiceSignal:(body:{roomId:string;credential:string;sequence:number;type:string;recipientId:string|null;payload:Record<string,unknown>})=>
+    request<{accepted:boolean}>("/api/voice/radio",{method:"POST",body:JSON.stringify({action:"signal",...body})}),
+  voicePoll:(roomId:string,credential:string,after:number)=>
+    request<{events:VoiceEvent[];participants:VoiceParticipant[]}>("/api/voice/radio",{method:"POST",body:JSON.stringify({action:"poll",roomId,credential,after})}),
 };

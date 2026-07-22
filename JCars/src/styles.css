@@ -110,6 +110,25 @@ select {
 .identity button svg {
   width: 14px;
 }
+.test-mode-banner {
+  display: grid;
+  gap: 4px;
+  margin: 14px;
+  padding: 12px 14px;
+  border: 1px solid #d39b19;
+  border-left: 4px solid #d39b19;
+  background: #fff4ce;
+  color: #5f4300;
+  font-family: ui-monospace, monospace;
+}
+.test-mode-banner strong {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.test-mode-banner span {
+  font-size: 9px;
+  letter-spacing: 0.05em;
+}
 .assignment,
 .telemetry {
   margin: 14px;
@@ -416,6 +435,8 @@ select {
   gap: 8px;
   margin-top: 10px;
 }
+.tactical-voice-status{display:grid;gap:3px;padding:10px;border:1px solid #b91820;background:#f5eeee;font-family:var(--mono);font-size:10px}
+.tactical-voice-status strong{color:#b91820}.tactical-voice-status small{color:#667078}
 .audio-devices label {
   font-size: 9px;
   font-weight: 700;

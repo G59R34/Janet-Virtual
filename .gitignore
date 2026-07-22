@@ -24,6 +24,10 @@
 .DS_Store
 *.pem
 
+# JVA voice server deployment secrets
+/voice-server/.env
+/voice-server/Caddyfile
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -40,3 +44,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 JScope/public/generated/nttr-sector.json
+
+# Native client build artifacts (large, reproducible locally)
+/JScope/target/
+/JScope/target-voice/
+/JCars/src-tauri/target/
+/JCars/src-tauri/target-voice/
