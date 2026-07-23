@@ -14,7 +14,11 @@ pub struct Api {
 impl Api {
     pub fn new() -> Self {
         Self {
-            http: Client::new(),
+            http: Client::builder()
+                .connect_timeout(Duration::from_secs(8))
+                .timeout(Duration::from_secs(20))
+                .build()
+                .expect("valid JScope HTTP client configuration"),
             base: std::env::var("JSCOPE_API_URL")
                 .unwrap_or_else(|_| "http://localhost:3000".into()),
             supabase: std::env::var("JSCOPE_SUPABASE_URL")
@@ -25,9 +29,21 @@ impl Api {
     }
     fn decode<T: DeserializeOwned>(response: reqwest::blocking::Response) -> Result<T> {
         let status = response.status();
+        let content_type = response
+            .headers()
+            .get(reqwest::header::CONTENT_TYPE)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default()
+            .to_owned();
         let text = response.text()?;
         if !status.is_success() {
             let value: Value = serde_json::from_str(&text).unwrap_or_default();
+            if content_type.contains("text/html") || text.trim_start().starts_with('<') {
+                return Err(anyhow!(
+                    "JScope API returned an HTML error page (HTTP {}). Restart the JANET VA server and try again.",
+                    status
+                ));
+            }
             return Err(anyhow!(
                 value
                     .get("error")
@@ -37,7 +53,12 @@ impl Api {
                     .to_string()
             ));
         }
-        serde_json::from_str(&text).context("Invalid server response")
+        if content_type.contains("text/html") || text.trim_start().starts_with('<') {
+            return Err(anyhow!(
+                "JScope API returned HTML instead of JSON. Verify JSCOPE_API_URL and the JANET VA server."
+            ));
+        }
+        serde_json::from_str(&text).context("JScope API returned invalid JSON")
     }
     pub fn login(&self, email: &str, password: &str) -> Result<AuthSession> {
         #[derive(serde::Deserialize)]

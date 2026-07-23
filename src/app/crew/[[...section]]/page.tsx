@@ -17,6 +17,7 @@ import { buildPortalNavigation } from "@/lib/portal-navigation";
 import { requireViewer } from "@/lib/auth";
 import { hasUnrestrictedRead } from "@/lib/roles";
 import { FleetParkingBoard } from "@/components/fleet-parking-board";
+import { DownloadCenter } from "@/components/download-center";
 const titles: Record<string, string> = {
   assignments: "Assigned Flights",
   flights: "Available Flights",
@@ -25,6 +26,7 @@ const titles: Record<string, string> = {
   training: "Training Center",
   qualifications: "Qualifications",
   documents: "Document Library",
+  downloads: "Download Center",
   availability: "Availability",
   messages: "Messages",
   profile: "Profile & Settings",
@@ -59,6 +61,7 @@ function permitted(section: string, roles: string[]) {
       "training",
       "qualifications",
       "documents",
+      "downloads",
       "availability",
       "messages",
       "profile",
@@ -102,6 +105,7 @@ export default async function Page({
     content = <FlightAssignments userId={viewer.user.id} />;
   else if (selected === "logbook")
     content = <PilotLogbook userId={viewer.user.id} />;
+  else if (selected === "downloads") content = <DownloadCenter />;
   else if (selected === "flights")
     content = <AvailableFlightsBoard userId={viewer.user.id} roles={roles} />;
   else if (selected === "operations") content = <OperationsDashboard />;
@@ -112,6 +116,7 @@ export default async function Page({
     content = (
       <CrewAdmin
         canManageAtc={roles.includes("owner") || roles.includes("system_administrator")}
+        canDeleteUsers={roles.includes("owner") || roles.includes("system_administrator")}
       />
     );
   else if (selected === "audit") content = <AuditHistory />;

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { AdminAction } from "@/components/admin-action";
 import { ControllerAccessAdmin } from "@/components/controller-access-admin";
+import { DeleteUserAction } from "@/components/delete-user-action";
 type Application = {
   id: string;
   status: string;
@@ -36,7 +37,13 @@ type Review = {
     aircraft: { registration: string } | null;
   } | null;
 };
-export async function CrewAdmin({ canManageAtc = false }: { canManageAtc?: boolean }) {
+export async function CrewAdmin({
+  canManageAtc = false,
+  canDeleteUsers = false,
+}: {
+  canManageAtc?: boolean;
+  canDeleteUsers?: boolean;
+}) {
   const db = await createClient();
   const [
     { data: applications, error },
@@ -363,6 +370,7 @@ export async function CrewAdmin({ canManageAtc = false }: { canManageAtc?: boole
                     tone="primary"
                   />
                 )}
+                {canDeleteUsers && <DeleteUserAction person={person} />}
               </span>
             </div>
           ))}
